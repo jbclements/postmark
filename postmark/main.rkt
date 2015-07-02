@@ -1,4 +1,4 @@
-#lang typed/racket
+#lang typed/racket/base
 
 ;; some basic Postmark functionality.
 ;; NB: Uses only http-sendrecv, for simplicity.
@@ -7,10 +7,15 @@
 
 (require typed/net/http-client
          typed/json
-         typed/rackunit)
+         typed/rackunit
+         typed/net/uri-codec
+         racket/match)
 
 (provide send-single-email
-         send-to-endpoint
+         deliverystats
+         postmark-post
+         postmark-get
+         send-to-endpoint/inner
          TESTING-SERVER-TOKEN)
 
 (define SERVER-TOKEN-TAG #"X-Postmark-Server-Token")
@@ -22,24 +27,68 @@
 
 ;; SEND A SINGLE EMAIL
 
-(define SINGLE-EMAIL-ENDPOINT "/email")
-
 ;; send a single email
 (: send-single-email (Bytes String String String -> JSExpr))
 (define (send-single-email server-token from to text)
-  (send-to-endpoint
-   SINGLE-EMAIL-ENDPOINT
+  (postmark-post
+   "/email"
    (list #"Content-Type: application/json"
          #"Accept: application/json"
-         (bytes-append SERVER-TOKEN-TAG #": " server-token))
+         (server-token->header server-token))
    (make-hash
     `((From . ,from)
       (To . ,to)
       (TextBody . ,text)))))
 
+;; DELIVERY STATISTICS
+(: deliverystats (Bytes -> JSExpr))
+(define (deliverystats server-token)
+  (postmark-get
+   "/deliverystats"
+   (list 
+    (server-token->header server-token)
+    #"Accept: application/json")))
 
-(: send-to-endpoint (String (Listof Bytes) JSExpr -> JSExpr))
-(define (send-to-endpoint endpoint headers data)
+;; get the text of the bounces
+(: get-bounces (Bytes #:count Natural #:offset Natural -> JSExpr))
+(define (get-bounces server-token
+                     #:count count
+                     #:offset offset)
+  (postmark-get
+   (string-append
+    "/bounces?"
+    (alist->form-urlencoded
+     `((count . ,(number->string count))
+       (offset . ,(number->string offset)))))
+   (list 
+    (server-token->header server-token)
+    #"Accept: application/json")))
+
+;; format the server token as a header line
+;; e.g.: B7D4E => #"X-Postmark-Server-Token: B7D4E"
+(: server-token->header (Bytes -> Bytes))
+(define (server-token->header server-token)
+  (bytes-append SERVER-TOKEN-TAG #": " server-token))
+
+
+;; make a POST request to the Postmark API
+(: postmark-post (String (Listof Bytes) JSExpr -> JSExpr))
+(define (postmark-post endpoint headers data)
+  (send-to-endpoint/inner #"POST" endpoint headers
+                          (jsexpr->bytes data)))
+
+;; make a GET request to the Postmark API
+(: postmark-get (String (Listof Bytes) -> JSExpr))
+(define (postmark-get endpoint headers)
+  (send-to-endpoint/inner #"GET" endpoint headers #""))
+
+;; legal HTTP methods:
+(define-type Method (U #"GET" #"POST"))
+
+;; send something to a Postmark endpoint. This is the common abstraction
+;; for postmark-post and postmark-get
+(: send-to-endpoint/inner (Method String (Listof Bytes) Bytes -> JSExpr))
+(define (send-to-endpoint/inner method endpoint headers data)
   (: status-line Bytes)
   (: recv-headers (Listof Bytes))
   (: receive-port Input-Port)
@@ -48,8 +97,8 @@
                    endpoint
                    #:ssl? #t
                    #:headers headers
-                   #:data (jsexpr->bytes data)
-                   #:method #"POST"))
+                   #:data data
+                   #:method method))
   (match status-line
     [(regexp #px#"^HTTP/1.1 200")
      (define response-body (read-json receive-port))
@@ -79,9 +128,11 @@
 (check-exn
  #px"422 Unprocessable Entity"
  (lambda ()
-   (send-to-endpoint "/email"
-                     null
-                     123)))
+   (send-to-endpoint/inner
+    #"POST"
+    "/email"
+    null
+    #"123")))
 
 (check-match
  (send-single-email TESTING-SERVER-TOKEN
@@ -93,4 +144,14 @@
              (To "franky@illegal.com")
              (dc1 dc2) ...)
  ))
+
+;; postmark internal error??
+#;(send-to-endpoint/inner
+ #"GET"
+ "/deliverystats"
+ (list #"Accept: application/json"
+       (server-token->header TESTING-SERVER-TOKEN))
+ (jsexpr->bytes ""))
+
+#;(deliverystats TESTING-SERVER-TOKEN)
 
