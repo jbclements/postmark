@@ -9,7 +9,9 @@
          typed/json
          typed/rackunit)
 
-(provide send-single-email)
+(provide send-single-email
+         send-to-endpoint
+         TESTING-SERVER-TOKEN)
 
 (define SERVER-TOKEN-TAG #"X-Postmark-Server-Token")
 (define ACCOUNT-TOKEN-TAG #"X-Postmark-Account-Token")
@@ -23,8 +25,8 @@
 (define SINGLE-EMAIL-ENDPOINT "/email")
 
 ;; send a single email
-(: send-single-email (String String String Bytes -> JSExpr))
-(define (send-single-email from to text server-token)
+(: send-single-email (Bytes String String String -> JSExpr))
+(define (send-single-email server-token from to text)
   (send-to-endpoint
    SINGLE-EMAIL-ENDPOINT
    (list #"Content-Type: application/json"
@@ -70,17 +72,25 @@
     [other (error 'send-to-endpoint "unexpected server status line: ~e"
                   status-line)]))
 
-
+(module* test racket/base
+  (require rackunit
+           (submod ".."))
 ;; should complain about bogus body
 (check-exn
  #px"422 Unprocessable Entity"
  (lambda ()
-   (send-to-endpoint SINGLE-EMAIL-ENDPOINT
+   (send-to-endpoint "/email"
                      null
                      123)))
 
-#;(send-single-email "bogus@illegal.com"
-                      "franky@illegal.com"
-                      "XYZ"
-                      TESTING-SERVER-TOKEN)
+(check-match
+ (send-single-email TESTING-SERVER-TOKEN
+                    "bogus@illegal.com"
+                    "franky@illegal.com"
+                    "XYZ")
+ (hash-table (ErrorCode 0)
+             (Message "Test job accepted")
+             (To "franky@illegal.com")
+             (dc1 dc2) ...)
+ ))
 
