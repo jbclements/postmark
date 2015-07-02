@@ -30,7 +30,7 @@
 ;; send a single email
 (: send-single-email (Bytes #:From String #:To String #:Body String -> JSExpr))
 (define (send-single-email server-token #:From from #:To to #:Body text)
-  (send-to-endpoint
+  (postmark-post
    "/email"
    (list #"Content-Type: application/json"
          #"Accept: application/json"
