@@ -28,9 +28,9 @@
 ;; SEND A SINGLE EMAIL
 
 ;; send a single email
-(: send-single-email (Bytes String String String -> JSExpr))
-(define (send-single-email server-token from to text)
-  (postmark-post
+(: send-single-email (Bytes #:From String #:To String #:Body String -> JSExpr))
+(define (send-single-email server-token #:From from #:To to #:Body text)
+  (send-to-endpoint
    "/email"
    (list #"Content-Type: application/json"
          #"Accept: application/json"
@@ -136,9 +136,9 @@
 
 (check-match
  (send-single-email TESTING-SERVER-TOKEN
-                    "bogus@illegal.com"
-                    "franky@illegal.com"
-                    "XYZ")
+                    #:From "bogus@illegal.com"
+                    #:To "franky@illegal.com"
+                    #:Body "XYZ")
  (hash-table (ErrorCode 0)
              (Message "Test job accepted")
              (To "franky@illegal.com")
