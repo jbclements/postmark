@@ -25,12 +25,18 @@ Sends a single e-mail. Use a comma-separated string for multiple
 recipients.
 }
 
-@defproc[(send-to-endpoint [endpoint String]
-                           [headers (listof bytes?)]
-                           [data jsexpr?]) jsexpr?]{
-Sends a jsexpr to a given endpoint (of the
-postmark host) using the given headers and the method "POST".
-
-This is the backing abstraction for other functions.
-
+@defproc[(deliverystats [server-api-key bytes?]) jsexpr?]{
+Return delivery statistics for the server associated with the API
+key.
 }
+
+@defproc[(get-bounces [server-api-key bytes?]
+                      [#:count count natural?]
+                      [#:offset offset Natural?]) jsexpr?]{
+Gets the text of bounced messages from an ordered list stored by the
+server. The @racket[count] indicates
+the maximum number of bounced messages to be obtained, and
+@racket[offset] indicates the point in the ordered list at which
+the server starts returning messages.}
+
+
