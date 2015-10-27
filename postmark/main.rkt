@@ -28,17 +28,23 @@
 ;; SEND A SINGLE EMAIL
 
 ;; send a single email
-(: send-single-email (Bytes #:From String #:To String #:Body String -> JSExpr))
-(define (send-single-email server-token #:From from #:To to #:Body text)
+(: send-single-email (Bytes #:From String #:To String #:Body String
+                            [#:Subject (U False String)] -> JSExpr))
+(define (send-single-email server-token #:From from #:To to #:Body text
+                           #:Subject [subject #f])
+  (: fields-assoc (Listof (Pairof Symbol String)))
+  (define fields-assoc
+    (append (cond [(string? subject) `((Subject . ,subject))]
+                  [else `()])
+            `((From . ,from)
+              (To . ,to)
+              (TextBody . ,text))))
   (postmark-post
    "/email"
    (list #"Content-Type: application/json"
          #"Accept: application/json"
          (server-token->header server-token))
-   (make-hash
-    `((From . ,from)
-      (To . ,to)
-      (TextBody . ,text)))))
+   (make-hash fields-assoc)))
 
 ;; DELIVERY STATISTICS
 (: deliverystats (Bytes -> JSExpr))
