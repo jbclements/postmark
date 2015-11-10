@@ -6,23 +6,35 @@
 
 @(require (for-label "main.rkt"))
 
+@(define (linklink url)
+   (link url url))
+
 @defmodule[postmark]{This collection allows the use of the Postmark API.}
 
-@link["http://www.postmarkapp.com/"]{Postmark}Postmark is an e-mail
+@link["http://www.postmarkapp.com/"]{Postmark} is an e-mail
 delivery service.
 
 The Postmark API uses a REST interface, via HTTP.
 
 In order to
 use Postmark, users must sign up with Postmark to obtain credentials.
+(Postmark is not free; as of 2015-11, it costs about 1/8 of a cent to
+send an email to a single recipient.)
 
+This interface is incredibly thin; adding new calls is super-simple.
+In fact, the abstract-o-matic inside me wants to simplify all of this
+to a simple declarative api-specification-language.
+
+For more information on the API, see
+@linklink["http://developer.postmarkapp.com/"]
 
 @defproc[(send-single-email [server-api-key bytes?]
                             [#:From from string?]
                             [#:To to string?]
-                            [#:Body body string?]) jsexpr?]{
+                            [#:Body body string?]
+                            [#:Subject subject (or/c string? #f) #f]) jsexpr?]{
 Sends a single e-mail. Use a comma-separated string for multiple
-recipients.
+recipients. Use the server-api-key supplied by Postmark.
 }
 
 @defproc[(deliverystats [server-api-key bytes?]) jsexpr?]{
