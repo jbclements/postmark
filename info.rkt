@@ -2,15 +2,15 @@
 
 (define collection 'multi)
 
-#;(define deps
+(define deps
   (list "base"
-        "rackunit-lib"
-        "scribble-lib"
         "typed-racket-lib"
         "typed-racket-more"
-        "unstable-contract-lib"
-        "web-server-lib"))
+        "unstable-contract-lib"))
 
-#;(define build-deps
-  (list "rackunit-lib"))
+(define build-deps
+  (list "racket-doc"
+        "rackunit-lib"
+        "scribble-lib"))
+
 
