@@ -32,6 +32,10 @@
                             [#:Subject (U False String)] -> JSExpr))
 (define (send-single-email server-token #:From from #:To to #:Body text
                            #:Subject [subject #f])
+  (when (string=? text "")
+    (raise-argument-error 'send-email
+                          "non-empty text string"
+                          3 server-token from to text subject))
   (: fields-assoc (Listof (Pairof Symbol String)))
   (define fields-assoc
     (append (cond [(string? subject) `((Subject . ,subject))]
