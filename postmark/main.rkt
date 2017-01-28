@@ -7,7 +7,6 @@
 
 (require typed/net/http-client
          typed/json
-         typed/rackunit
          typed/net/uri-codec
          racket/match)
 

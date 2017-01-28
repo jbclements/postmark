@@ -5,8 +5,7 @@
 (define deps
   (list "base"
         "typed-racket-lib"
-        "typed-racket-more"
-        "unstable-contract-lib"))
+        "typed-racket-more"))
 
 (define build-deps
   (list "racket-doc"
